@@ -86,7 +86,7 @@ export default function CourseSection({
           <div className="mt-1.5 flex items-center gap-2">
             <span
               className={
-                "rounded-full px-2.5 py-0.5 text-xs font-bold " +
+                "whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold " +
                 (allDone
                   ? "bg-lime text-ink"
                   : "bg-background text-muted")
