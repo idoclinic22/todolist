@@ -27,34 +27,77 @@ export default function TodoApp() {
     return map;
   }, [todos]);
 
+  const total = todos.length;
+  const done = todos.filter((t) => t.done).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
   return (
-    <div className="space-y-6">
-      <header className="space-y-3">
-        <h1 className="text-2xl font-bold text-neutral-900">AK 강의 할 일</h1>
-        <p className="text-sm text-neutral-500">
-          강좌별로 준비할 일을 관리하세요. 입력한 내용은 이 브라우저에 자동
-          저장되어 새로고침해도 유지됩니다.
-        </p>
-        <AddCourseForm onAdd={store.addCourse} />
+    <div>
+      <header>
+        <p className="eyebrow text-muted">AK 응용근신경학 강의</p>
+        <h1 className="display mt-3 text-[15vw] leading-none sm:text-7xl">
+          할 일
+        </h1>
+
+        {/* 블랙 요약 카드 — 참고 이미지의 포인트 카드 느낌 */}
+        <div className="mt-7 rounded-[28px] bg-ink p-6 text-white">
+          <div className="flex items-center justify-between">
+            <span className="eyebrow text-white/55">전체 진행률</span>
+            <span className="rounded-full bg-lime px-3 py-1 text-xs font-bold text-ink">
+              강좌 {courses.length}개
+            </span>
+          </div>
+
+          {total === 0 ? (
+            <p className="mt-4 text-sm text-white/60">
+              아직 할 일이 없어요. 아래에서 강좌를 먼저 추가하세요.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="display text-6xl text-lime">{done}</span>
+                <span className="text-lg font-medium text-white/45">
+                  / {total} 완료
+                </span>
+              </div>
+              <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-lime transition-[width] duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="mt-2.5 text-xs font-medium text-white/45">
+                {total - done}개 남음 · {pct}%
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="mt-5">
+          <AddCourseForm onAdd={store.addCourse} />
+        </div>
       </header>
 
       {store.persistError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           이 브라우저에서 저장소를 사용할 수 없어 변경 내용이 유지되지 않을 수
           있습니다. (사생활 보호 모드 또는 저장 공간 부족)
         </div>
       )}
 
       {!store.hydrated ? (
-        <p className="py-10 text-center text-sm text-neutral-400">
-          불러오는 중…
-        </p>
+        <p className="eyebrow mt-10 text-center text-muted">불러오는 중…</p>
       ) : courses.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-neutral-300 py-12 text-center text-sm text-neutral-400">
-          아직 강좌가 없습니다. 위에서 첫 강좌를 추가해 보세요.
-        </p>
+        <div className="mt-6 rounded-[28px] border-2 border-dashed border-line py-16 text-center">
+          <p className="text-sm font-medium text-muted">
+            아직 강좌가 없습니다.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            위 입력창에 첫 강좌를 추가해 보세요.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="mt-6 space-y-4">
           {courses.map((course) => (
             <CourseSection
               key={course.id}

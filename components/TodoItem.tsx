@@ -14,9 +14,9 @@ interface Props {
 }
 
 const PRIORITY_STYLE: Record<Priority, string> = {
-  high: "bg-red-50 text-red-700 border-red-200",
-  normal: "bg-neutral-100 text-neutral-600 border-neutral-200",
-  low: "bg-neutral-50 text-neutral-400 border-neutral-200",
+  high: "bg-red-100 text-red-700",
+  normal: "bg-background text-muted",
+  low: "bg-background text-muted/60",
 };
 
 export default function TodoItem({
@@ -61,19 +61,35 @@ export default function TodoItem({
       ? todo.dueDate < today
         ? "text-red-600"
         : todo.dueDate === today
-          ? "text-accent font-medium"
-          : "text-neutral-500"
-      : "text-neutral-400";
+          ? "text-ink font-semibold"
+          : "text-muted"
+      : "text-muted/60";
 
   return (
-    <li className="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-neutral-50">
-      <input
-        type="checkbox"
-        checked={todo.done}
-        onChange={() => onToggle(todo.id)}
-        className="size-4 shrink-0 accent-accent"
+    <li className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-background">
+      {/* 라임으로 채워지는 커스텀 체크박스 */}
+      <button
+        type="button"
+        onClick={() => onToggle(todo.id)}
         aria-label={todo.done ? "완료 취소" : "완료 표시"}
-      />
+        aria-pressed={todo.done}
+        className={
+          "grid size-6 shrink-0 place-items-center rounded-full border-2 transition-all " +
+          (todo.done
+            ? "border-lime bg-lime text-ink"
+            : "border-ink/25 text-transparent hover:border-ink")
+        }
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path
+            d="M2.5 6.5l2.5 2.5L9.5 3.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
 
       {editing ? (
         <input
@@ -82,14 +98,14 @@ export default function TodoItem({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={onKey}
-          className="flex-1 rounded border border-accent px-1.5 py-0.5 text-sm outline-none"
+          className="flex-1 rounded-lg bg-paper px-2 py-1 text-sm outline outline-2 outline-ink"
         />
       ) : (
         <span
           onDoubleClick={() => setEditing(true)}
           className={
             "flex-1 cursor-text text-sm " +
-            (todo.done ? "text-neutral-400 line-through" : "text-neutral-800")
+            (todo.done ? "text-muted/60 line-through" : "text-foreground")
           }
           title="더블클릭하여 수정"
         >
@@ -98,7 +114,7 @@ export default function TodoItem({
       )}
 
       {/* 날짜 */}
-      <label className="relative">
+      <label className="relative shrink-0">
         <span className={"text-xs tabular-nums " + dateTone}>
           {todo.dueDate ?? "＋날짜"}
         </span>
@@ -116,7 +132,7 @@ export default function TodoItem({
         value={todo.priority}
         onChange={(e) => onSetPriority(todo.id, e.target.value as Priority)}
         className={
-          "shrink-0 cursor-pointer rounded border px-1.5 py-0.5 text-xs outline-none " +
+          "shrink-0 cursor-pointer rounded-full px-2.5 py-1 text-xs font-bold outline-none " +
           PRIORITY_STYLE[todo.priority]
         }
         aria-label="우선순위"
@@ -134,7 +150,7 @@ export default function TodoItem({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700"
+            className="grid size-7 place-items-center rounded-full text-muted hover:bg-line hover:text-ink"
             aria-label="수정"
           >
             ✎
@@ -143,7 +159,7 @@ export default function TodoItem({
         <button
           type="button"
           onClick={() => onDelete(todo.id)}
-          className="rounded p-1 text-neutral-400 hover:bg-red-100 hover:text-red-600"
+          className="grid size-7 place-items-center rounded-full text-muted hover:bg-red-100 hover:text-red-600"
           aria-label="삭제"
         >
           ✕
