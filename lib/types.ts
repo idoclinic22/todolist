@@ -19,14 +19,6 @@ export interface Todo {
   createdAt: number;
 }
 
-export interface AppState {
-  version: number;
-  courses: Course[];
-  todos: Todo[];
-}
-
-export const CURRENT_VERSION = 1;
-
 export const PRIORITY_LABEL: Record<Priority, string> = {
   high: "높음",
   normal: "보통",
@@ -41,3 +33,47 @@ export const PRIORITY_WEIGHT: Record<Priority, number> = {
 };
 
 export type TodoFilter = "all" | "active" | "done";
+
+// ---------- Supabase 행(row) <-> 앱 타입 매핑 ----------
+
+export interface CourseRow {
+  id: string;
+  user_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface TodoRow {
+  id: string;
+  user_id: string;
+  course_id: string;
+  text: string;
+  done: boolean;
+  priority: Priority;
+  due_date: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export function rowToCourse(r: CourseRow): Course {
+  return {
+    id: r.id,
+    name: r.name,
+    order: r.sort_order,
+    createdAt: Date.parse(r.created_at),
+  };
+}
+
+export function rowToTodo(r: TodoRow): Todo {
+  return {
+    id: r.id,
+    courseId: r.course_id,
+    text: r.text,
+    done: r.done,
+    priority: r.priority,
+    dueDate: r.due_date,
+    order: r.sort_order,
+    createdAt: Date.parse(r.created_at),
+  };
+}
