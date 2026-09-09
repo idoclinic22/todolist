@@ -2,13 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { Course, Todo } from "@/lib/types";
+import { useAuth } from "@/hooks/useAuth";
 import { useTodoStore } from "@/hooks/useTodoStore";
 import AddCourseForm from "./AddCourseForm";
 import CourseSection from "./CourseSection";
 import ConfirmDialog from "./ConfirmDialog";
+import LoginScreen from "./LoginScreen";
 
 export default function TodoApp() {
-  const store = useTodoStore();
+  const auth = useAuth();
+  const userId = auth.session?.user.id ?? null;
+  const store = useTodoStore(userId);
   const { courses: rawCourses, todos } = store.state;
   const [pendingDelete, setPendingDelete] = useState<Course | null>(null);
 
@@ -31,11 +35,29 @@ export default function TodoApp() {
   const done = todos.filter((t) => t.done).length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
+  if (auth.loading) {
+    return <p className="eyebrow mt-16 text-center text-muted">불러오는 중…</p>;
+  }
+
+  if (!auth.session) {
+    return <LoginScreen />;
+  }
+
   return (
     <div>
       <header>
-        <p className="eyebrow text-muted">AK 응용근신경학 강의</p>
-        <h1 className="display mt-3 text-[15vw] leading-none sm:text-7xl">
+        <div className="flex items-start justify-between gap-3">
+          <p className="eyebrow text-muted">AK 응용근신경학 강의</p>
+          <button
+            type="button"
+            onClick={auth.signOut}
+            className="shrink-0 rounded-full px-3 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink"
+            title={auth.email ?? undefined}
+          >
+            로그아웃
+          </button>
+        </div>
+        <h1 className="display mt-2 text-[15vw] leading-none sm:text-7xl">
           할 일
         </h1>
 
@@ -78,10 +100,9 @@ export default function TodoApp() {
         </div>
       </header>
 
-      {store.persistError && (
+      {store.error && (
         <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          이 브라우저에서 저장소를 사용할 수 없어 변경 내용이 유지되지 않을 수
-          있습니다. (사생활 보호 모드 또는 저장 공간 부족)
+          저장 중 문제가 발생했습니다: {store.error}
         </div>
       )}
 

@@ -1,19 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Priority } from "@/lib/types";
+import { supabase } from "@/lib/supabaseClient";
 import {
-  createId,
-  emptyState,
-  loadState,
-  saveState,
-} from "@/lib/storage";
+  Course,
+  CourseRow,
+  Priority,
+  Todo,
+  TodoRow,
+  rowToCourse,
+  rowToTodo,
+} from "@/lib/types";
 
-interface UseTodoStore {
-  state: AppState;
+interface State {
+  courses: Course[];
+  todos: Todo[];
+}
+
+interface WriteResult {
+  error: { message: string } | null;
+}
+
+export interface TodoStore {
+  state: State;
+  /** 최초 로드 완료 여부 */
   hydrated: boolean;
-  /** localStorage 저장이 불가능한 환경인지 (사생활 모드 등) */
-  persistError: boolean;
+  /** 마지막 오류 메시지 (없으면 null) */
+  error: string | null;
 
   addCourse: (name: string) => void;
   renameCourse: (courseId: string, name: string) => void;
@@ -27,139 +40,243 @@ interface UseTodoStore {
   deleteTodo: (todoId: string) => void;
 }
 
-export function useTodoStore(): UseTodoStore {
-  const [state, setState] = useState<AppState>(emptyState);
+const EMPTY: State = { courses: [], todos: [] };
+
+export function useTodoStore(userId: string | null): TodoStore {
+  const [state, setState] = useState<State>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
-  const [persistError, setPersistError] = useState(false);
-  const firstSave = useRef(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 마운트 후 클라이언트에서만 로드 (SSR hydration 안전)
-  useEffect(() => {
-    setState(loadState());
-    setHydrated(true);
-  }, []);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  // 상태 변경 시 자동 저장 (하이드레이션 완료 후)
-  useEffect(() => {
-    if (!hydrated) return;
-    // 로드 직후 첫 실행은 저장 생략 (불필요한 write 방지)
-    if (firstSave.current) {
-      firstSave.current = false;
+  const reload = useCallback(async () => {
+    if (!userId) {
+      setState(EMPTY);
+      setHydrated(true);
       return;
     }
-    const ok = saveState(state);
-    setPersistError(!ok);
-  }, [state, hydrated]);
-
-  const addCourse = useCallback((name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setState((s) => ({
-      ...s,
-      courses: [
-        ...s.courses,
-        {
-          id: createId(),
-          name: trimmed,
-          order: s.courses.length,
-          createdAt: Date.now(),
-        },
-      ],
-    }));
-  }, []);
-
-  const renameCourse = useCallback((courseId: string, name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setState((s) => ({
-      ...s,
-      courses: s.courses.map((c) =>
-        c.id === courseId ? { ...c, name: trimmed } : c,
-      ),
-    }));
-  }, []);
-
-  const deleteCourse = useCallback((courseId: string) => {
-    setState((s) => ({
-      ...s,
-      courses: s.courses.filter((c) => c.id !== courseId),
-      todos: s.todos.filter((t) => t.courseId !== courseId),
-    }));
-  }, []);
-
-  const addTodo = useCallback((courseId: string, text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    setState((s) => {
-      const count = s.todos.filter((t) => t.courseId === courseId).length;
-      return {
-        ...s,
-        todos: [
-          ...s.todos,
-          {
-            id: createId(),
-            courseId,
-            text: trimmed,
-            done: false,
-            priority: "normal",
-            dueDate: null,
-            order: count,
-            createdAt: Date.now(),
-          },
-        ],
-      };
+    const [courseRes, todoRes] = await Promise.all([
+      supabase.from("courses").select("*").order("sort_order"),
+      supabase.from("todos").select("*").order("sort_order"),
+    ]);
+    if (courseRes.error || todoRes.error) {
+      setError((courseRes.error ?? todoRes.error)!.message);
+      setHydrated(true);
+      return;
+    }
+    setState({
+      courses: (courseRes.data as CourseRow[]).map(rowToCourse),
+      todos: (todoRes.data as TodoRow[]).map(rowToTodo),
     });
-  }, []);
+    setError(null);
+    setHydrated(true);
+  }, [userId]);
 
-  const toggleTodo = useCallback((todoId: string) => {
-    setState((s) => ({
-      ...s,
-      todos: s.todos.map((t) =>
-        t.id === todoId ? { ...t, done: !t.done } : t,
-      ),
-    }));
-  }, []);
+  useEffect(() => {
+    setHydrated(false);
+    reload();
+  }, [reload]);
 
-  const editTodo = useCallback((todoId: string, text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    setState((s) => ({
-      ...s,
-      todos: s.todos.map((t) =>
-        t.id === todoId ? { ...t, text: trimmed } : t,
-      ),
-    }));
-  }, []);
+  /** 낙관적 업데이트 후 DB 반영. 실패 시 서버 상태로 되돌림. */
+  const mutate = useCallback(
+    async (
+      optimistic: (s: State) => State,
+      write: () => PromiseLike<WriteResult>,
+    ) => {
+      setState(optimistic(stateRef.current));
+      const { error: writeError } = await write();
+      if (writeError) {
+        setError(writeError.message);
+        await reload();
+      } else {
+        setError(null);
+      }
+    },
+    [reload],
+  );
 
-  const setPriority = useCallback((todoId: string, priority: Priority) => {
-    setState((s) => ({
-      ...s,
-      todos: s.todos.map((t) =>
-        t.id === todoId ? { ...t, priority } : t,
-      ),
-    }));
-  }, []);
+  // ---------- 강좌 ----------
 
-  const setDueDate = useCallback((todoId: string, dueDate: string | null) => {
-    setState((s) => ({
-      ...s,
-      todos: s.todos.map((t) =>
-        t.id === todoId ? { ...t, dueDate: dueDate || null } : t,
-      ),
-    }));
-  }, []);
+  const addCourse = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed || !userId) return;
+      const id = crypto.randomUUID();
+      const order = stateRef.current.courses.length;
+      mutate(
+        (s) => ({
+          ...s,
+          courses: [
+            ...s.courses,
+            { id, name: trimmed, order, createdAt: Date.now() },
+          ],
+        }),
+        () =>
+          supabase
+            .from("courses")
+            .insert({ id, user_id: userId, name: trimmed, sort_order: order }),
+      );
+    },
+    [userId, mutate],
+  );
 
-  const deleteTodo = useCallback((todoId: string) => {
-    setState((s) => ({
-      ...s,
-      todos: s.todos.filter((t) => t.id !== todoId),
-    }));
-  }, []);
+  const renameCourse = useCallback(
+    (courseId: string, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      mutate(
+        (s) => ({
+          ...s,
+          courses: s.courses.map((c) =>
+            c.id === courseId ? { ...c, name: trimmed } : c,
+          ),
+        }),
+        () =>
+          supabase.from("courses").update({ name: trimmed }).eq("id", courseId),
+      );
+    },
+    [mutate],
+  );
+
+  const deleteCourse = useCallback(
+    (courseId: string) => {
+      mutate(
+        (s) => ({
+          courses: s.courses.filter((c) => c.id !== courseId),
+          todos: s.todos.filter((t) => t.courseId !== courseId),
+        }),
+        () => supabase.from("courses").delete().eq("id", courseId),
+      );
+    },
+    [mutate],
+  );
+
+  // ---------- 할 일 ----------
+
+  const addTodo = useCallback(
+    (courseId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || !userId) return;
+      const id = crypto.randomUUID();
+      const order = stateRef.current.todos.filter(
+        (t) => t.courseId === courseId,
+      ).length;
+      mutate(
+        (s) => ({
+          ...s,
+          todos: [
+            ...s.todos,
+            {
+              id,
+              courseId,
+              text: trimmed,
+              done: false,
+              priority: "normal",
+              dueDate: null,
+              order,
+              createdAt: Date.now(),
+            },
+          ],
+        }),
+        () =>
+          supabase.from("todos").insert({
+            id,
+            user_id: userId,
+            course_id: courseId,
+            text: trimmed,
+            sort_order: order,
+          }),
+      );
+    },
+    [userId, mutate],
+  );
+
+  const toggleTodo = useCallback(
+    (todoId: string) => {
+      const current = stateRef.current.todos.find((t) => t.id === todoId);
+      if (!current) return;
+      const next = !current.done;
+      mutate(
+        (s) => ({
+          ...s,
+          todos: s.todos.map((t) =>
+            t.id === todoId ? { ...t, done: next } : t,
+          ),
+        }),
+        () => supabase.from("todos").update({ done: next }).eq("id", todoId),
+      );
+    },
+    [mutate],
+  );
+
+  const editTodo = useCallback(
+    (todoId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      mutate(
+        (s) => ({
+          ...s,
+          todos: s.todos.map((t) =>
+            t.id === todoId ? { ...t, text: trimmed } : t,
+          ),
+        }),
+        () =>
+          supabase.from("todos").update({ text: trimmed }).eq("id", todoId),
+      );
+    },
+    [mutate],
+  );
+
+  const setPriority = useCallback(
+    (todoId: string, priority: Priority) => {
+      mutate(
+        (s) => ({
+          ...s,
+          todos: s.todos.map((t) =>
+            t.id === todoId ? { ...t, priority } : t,
+          ),
+        }),
+        () => supabase.from("todos").update({ priority }).eq("id", todoId),
+      );
+    },
+    [mutate],
+  );
+
+  const setDueDate = useCallback(
+    (todoId: string, dueDate: string | null) => {
+      const value = dueDate || null;
+      mutate(
+        (s) => ({
+          ...s,
+          todos: s.todos.map((t) =>
+            t.id === todoId ? { ...t, dueDate: value } : t,
+          ),
+        }),
+        () =>
+          supabase.from("todos").update({ due_date: value }).eq("id", todoId),
+      );
+    },
+    [mutate],
+  );
+
+  const deleteTodo = useCallback(
+    (todoId: string) => {
+      mutate(
+        (s) => ({
+          ...s,
+          todos: s.todos.filter((t) => t.id !== todoId),
+        }),
+        () => supabase.from("todos").delete().eq("id", todoId),
+      );
+    },
+    [mutate],
+  );
 
   return {
     state,
     hydrated,
-    persistError,
+    error,
     addCourse,
     renameCourse,
     deleteCourse,
