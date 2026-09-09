@@ -1,15 +1,23 @@
 # AK 강의 할 일 (투두 리스트)
 
-AK(응용근신경학) 강의 준비를 **강좌별로** 관리하는 개인용 투두 리스트.
-서버·데이터베이스·로그인 없이, 입력한 내용은 **브라우저(localStorage)에 자동 저장**되어
-새로고침하거나 나중에 다시 열어도 그대로 남습니다.
+AK(응용근신경학) 강의 준비를 **강좌별로** 관리하는 투두 리스트.
+**이메일 로그인** 후, 데이터는 **Supabase(Postgres) DB**에 저장되며 로그인한 본인만 볼 수 있습니다(RLS).
 
 **배포 주소: https://todolist-idoclinic22-9180.vercel.app**
 
-기획서: [`docs/기획서.md`](docs/기획서.md)
+기획서: [`docs/기획서.md`](docs/기획서.md) · DB 스키마: [`db/schema.sql`](db/schema.sql)
 
 > `main` 브랜치에 `git push` 하면 Vercel이 자동으로 다시 배포합니다.
-> 예전(미니멀 라이트) 디자인은 태그 `v1-original` 로 보존되어 있습니다.
+> - 태그 `v1-original` — 최초 미니멀 라이트 디자인 (localStorage)
+> - 태그 `v2-redesign` — 에디토리얼/라임 디자인 (localStorage)
+> - `main` 현재 — 에디토리얼 디자인 + Supabase DB + 이메일 로그인
+
+## Supabase 설정 (이미 완료됨)
+
+- 프로젝트 URL / publishable 키는 공개값이라 `lib/supabaseClient.ts` 에 기본값으로 내장.
+  (덮어쓰려면 Vercel/`.env.local` 에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+- 테이블: `db/schema.sql` 을 Supabase SQL Editor 에서 실행 (courses, todos + RLS)
+- Auth → URL Configuration: Site URL + Redirect URLs(`localhost:3000/**`, 배포주소`/**`) 등록
 
 ## 주요 기능
 
