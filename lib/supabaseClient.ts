@@ -1,15 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * Supabase 접속 정보.
+ * URL 과 publishable(anon) 키는 원래 브라우저에 노출되는 공개 값이다.
+ * 실제 데이터 보호는 DB의 RLS 정책(본인 행만 읽기/쓰기)이 담당한다.
+ * 환경변수가 있으면 그것을 우선 사용하고, 없으면 아래 기본값으로 동작한다.
+ */
+const url =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  "https://zzoggygqnbuavwltxspk.supabase.co";
 
-if (!url || !key) {
-  throw new Error(
-    "Supabase 환경변수가 없습니다. .env.local 에 NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY 를 설정하세요.",
-  );
-}
+const key =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "sb_publishable_ZolA15Mc6b0brFHd7fZnnw_6Nxya392";
 
-/** 브라우저용 Supabase 클라이언트 (세션은 localStorage 에 저장) */
 export const supabase = createClient(url, key, {
   auth: {
     persistSession: true,
