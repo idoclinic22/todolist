@@ -34,33 +34,31 @@ export default function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
       onClick={onCancel}
       role="presentation"
     >
       <div
-        className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl"
+        className="w-full max-w-sm rounded-[24px] bg-paper p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
       >
-        <h2 className="text-base font-semibold text-neutral-900">{title}</h2>
-        {message && (
-          <p className="mt-2 text-sm text-neutral-600">{message}</p>
-        )}
-        <div className="mt-5 flex justify-end gap-2">
+        <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>
+        {message && <p className="mt-2 text-sm text-muted">{message}</p>}
+        <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100"
+            className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:bg-background"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+            className="rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
           >
             {confirmLabel}
           </button>

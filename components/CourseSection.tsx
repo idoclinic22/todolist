@@ -37,6 +37,7 @@ export default function CourseSection({
   const [nameDraft, setNameDraft] = useState(course.name);
 
   const doneCount = todos.filter((t) => t.done).length;
+  const allDone = todos.length > 0 && doneCount === todos.length;
 
   const visible = useMemo(() => {
     const filtered = todos.filter((t) =>
@@ -61,32 +62,43 @@ export default function CourseSection({
   }
 
   return (
-    <section className="rounded-xl border border-neutral-200 bg-white shadow-sm">
-      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-neutral-100 px-4 py-3">
-        {editingName ? (
-          <input
-            autoFocus
-            value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={onNameKey}
-            className="min-w-0 flex-1 rounded border border-accent px-1.5 py-0.5 text-base font-semibold outline-none"
-          />
-        ) : (
-          <h2
-            className="min-w-0 flex-1 cursor-text truncate text-base font-semibold text-neutral-900"
-            onDoubleClick={() => setEditingName(true)}
-            title="더블클릭하여 강좌 이름 수정"
-          >
-            {course.name}
-          </h2>
-        )}
-
-        <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-xs tabular-nums text-neutral-500">
-          {doneCount} / {todos.length}
-        </span>
-
-        <FilterTabs value={filter} onChange={setFilter} />
+    <section className="rounded-[28px] bg-paper p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_28px_-12px_rgba(0,0,0,0.12)]">
+      <header className="flex flex-wrap items-start gap-x-3 gap-y-3">
+        <div className="min-w-0 flex-1">
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={onNameKey}
+              className="w-full rounded-lg bg-background px-2 py-1 text-xl font-extrabold tracking-tight outline-none"
+            />
+          ) : (
+            <h2
+              className="cursor-text truncate text-xl font-extrabold tracking-tight"
+              onDoubleClick={() => setEditingName(true)}
+              title="더블클릭하여 강좌 이름 수정"
+            >
+              {course.name}
+            </h2>
+          )}
+          <div className="mt-1.5 flex items-center gap-2">
+            <span
+              className={
+                "whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold " +
+                (allDone
+                  ? "bg-lime text-ink"
+                  : "bg-background text-muted")
+              }
+            >
+              {doneCount} / {todos.length} 완료
+            </span>
+            {allDone && (
+              <span className="eyebrow text-lime-deep">DONE</span>
+            )}
+          </div>
+        </div>
 
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -95,35 +107,37 @@ export default function CourseSection({
               setNameDraft(course.name);
               setEditingName(true);
             }}
-            className="rounded px-2 py-1 text-xs text-neutral-500 hover:bg-neutral-100"
+            className="rounded-full px-2.5 py-1 text-xs font-medium text-muted hover:bg-background hover:text-ink"
           >
             이름수정
           </button>
           <button
             type="button"
             onClick={() => onRequestDeleteCourse(course)}
-            className="rounded px-2 py-1 text-xs text-neutral-500 hover:bg-red-50 hover:text-red-600"
+            className="rounded-full px-2.5 py-1 text-xs font-medium text-muted hover:bg-red-50 hover:text-red-600"
           >
             삭제
           </button>
         </div>
       </header>
 
-      <div className="space-y-2 px-4 py-3">
-        <AddTodoForm onAdd={(text) => onAddTodo(course.id, text)} />
+      <div className="mt-4">
+        <FilterTabs value={filter} onChange={setFilter} />
+      </div>
 
+      <div className="mt-3 space-y-1">
         {todos.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-neutral-400">
+          <p className="py-6 text-center text-sm text-muted">
             이 강좌에 할 일이 없습니다.
           </p>
         ) : visible.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm text-neutral-400">
+          <p className="py-6 text-center text-sm text-muted">
             {filter === "done"
               ? "완료된 할 일이 없습니다."
               : "진행 중인 할 일이 없습니다."}
           </p>
         ) : (
-          <ul className="-mx-2">
+          <ul>
             {visible.map((todo) => (
               <TodoItem
                 key={todo.id}
@@ -137,6 +151,10 @@ export default function CourseSection({
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="mt-3 border-t border-line pt-3">
+        <AddTodoForm onAdd={(text) => onAddTodo(course.id, text)} />
       </div>
     </section>
   );

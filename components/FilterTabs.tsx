@@ -15,10 +15,7 @@ interface Props {
 
 export default function FilterTabs({ value, onChange }: Props) {
   return (
-    <div
-      className="inline-flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs"
-      role="tablist"
-    >
+    <div className="inline-flex rounded-full bg-background p-1" role="tablist">
       {TABS.map((tab) => (
         <button
           key={tab.value}
@@ -27,10 +24,10 @@ export default function FilterTabs({ value, onChange }: Props) {
           aria-selected={value === tab.value}
           onClick={() => onChange(tab.value)}
           className={
-            "rounded-md px-2.5 py-1 font-medium transition-colors " +
+            "rounded-full px-3 py-1 text-xs font-bold transition-colors " +
             (value === tab.value
-              ? "bg-white text-neutral-900 shadow-sm"
-              : "text-neutral-500 hover:text-neutral-800")
+              ? "bg-ink text-lime"
+              : "text-muted hover:text-ink")
           }
         >
           {tab.label}

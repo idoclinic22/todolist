@@ -1,17 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #1a1a1a;
-  --accent: #0f766e; /* teal-700 — 포인트 컬러 */
+  --background: #f2f2ec; /* 따뜻한 오프화이트 */
+  --foreground: #0a0a0a;
+  --paper: #ffffff;
+  --ink: #0a0a0a; /* 블랙 카드 */
+  --lime: #cdf23d; /* 포인트 라임 */
+  --lime-deep: #b6da24;
+  --muted: #6b6b66;
+  --line: #e4e4dc;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic",
-    "Apple SD Gothic Neo", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-lime: var(--lime);
+  --color-lime-deep: var(--lime-deep);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 html,
@@ -19,8 +30,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: var(--lime);
+  color: #0a0a0a;
+}
+
+/* 큰 헤드라인용: 자간을 바짝 */
+.display {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
